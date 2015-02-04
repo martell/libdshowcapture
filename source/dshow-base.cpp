@@ -33,9 +33,9 @@ namespace DShow {
 bool CreateFilterGraph(IGraphBuilder **pgraph, ICaptureGraphBuilder2 **pbuilder,
 		IMediaControl **pcontrol)
 {
-	CComPtr<IGraphBuilder> graph;
-	CComPtr<ICaptureGraphBuilder2> builder;
-	CComPtr<IMediaControl> control;
+	IGraphBuilder          *graph;
+	ICaptureGraphBuilder2  *builder;
+	IMediaControl          *control;
 	HRESULT hr;
 
 	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
@@ -65,16 +65,16 @@ bool CreateFilterGraph(IGraphBuilder **pgraph, ICaptureGraphBuilder2 **pbuilder,
 		return false;
 	}
 
-	*pgraph = graph.Detach();
-	*pbuilder = builder.Detach();
-	*pcontrol = control.Detach();
+	*pgraph = graph;
+	*pbuilder = builder;
+	*pcontrol = control;
 	return true;
 }
 
 void LogFilters(IGraphBuilder *graph)
 {
-	CComPtr<IEnumFilters> filterEnum;
-	CComPtr<IBaseFilter>  filter;
+	IEnumFilters *filterEnum;
+	IBaseFilter  *filter;
 	HRESULT hr;
 
 	hr = graph->EnumFilters(&filterEnum);
@@ -94,14 +94,14 @@ void LogFilters(IGraphBuilder *graph)
 			Debug(L"\t%s", filterInfo.achName);
 		}
 
-		filter.Release();
+		filter->Release();
 	}
 }
 
 struct DeviceFilterCallbackInfo {
-	CComPtr<IBaseFilter> filter;
-	const wchar_t        *name;
-	const wchar_t        *path;
+	IBaseFilter   *filter;
+	const wchar_t *name;
+	const wchar_t *path;
 };
 
 static bool GetDeviceCallback(DeviceFilterCallbackInfo &info,
@@ -130,7 +130,7 @@ bool GetDeviceFilter(const IID &type, const wchar_t *name, const wchar_t *path,
 		return false;
 
 	if (info.filter != NULL) {
-		*out = info.filter.Detach();
+		*out = info.filter;
 		return true;
 	}
 
@@ -141,7 +141,7 @@ bool GetDeviceFilter(const IID &type, const wchar_t *name, const wchar_t *path,
 static bool PinConfigHasMajorType(IPin *pin, const GUID &type)
 {
 	HRESULT hr;
-	CComPtr<IAMStreamConfig> config;
+	IAMStreamConfig *config;
 	int count, size;
 
 	hr = pin->QueryInterface(IID_IAMStreamConfig, (void**)&config);
@@ -170,7 +170,7 @@ static bool PinHasMajorType(IPin *pin, const GUID &type)
 {
 	HRESULT hr;
 	MediaTypePtr mt;
-	CComPtr<IEnumMediaTypes> mediaEnum;
+	IEnumMediaTypes *mediaEnum;
 
 	/* first, check the config caps. */
 	if (PinConfigHasMajorType(pin, type))
@@ -202,8 +202,8 @@ static HRESULT GetPinCategory(IPin *pin, GUID &category)
 	if (!pin)
 		return E_POINTER;
 
-	CComQIPtr<IKsPropertySet> propertySet(pin);
-	DWORD                     size;
+	IKsPropertySet *propertySet(reinterpret_cast<IKsPropertySet*>(pin));
+	DWORD          size;
 
 	if (propertySet == NULL)
 		return E_NOINTERFACE;
@@ -258,9 +258,9 @@ static inline bool PinMatches(IPin *pin, const GUID &type, const GUID &category,
 bool GetFilterPin(IBaseFilter *filter, const GUID &type, const GUID &category,
 		PIN_DIRECTION dir, IPin **pin)
 {
-	CComPtr<IPin>      curPin;
-	CComPtr<IEnumPins> pinsEnum;
-	ULONG              num;
+	IPin      *curPin;
+	IEnumPins *pinsEnum;
+	ULONG     num;
 
 	if (!filter)
 		return false;
@@ -275,7 +275,7 @@ bool GetFilterPin(IBaseFilter *filter, const GUID &type, const GUID &category,
 			return true;
 		}
 
-		curPin.Release();
+		curPin->Release();
 	}
 
 	return false;
@@ -284,9 +284,9 @@ bool GetFilterPin(IBaseFilter *filter, const GUID &type, const GUID &category,
 bool GetPinByName(IBaseFilter *filter, PIN_DIRECTION dir, const wchar_t *name,
 		IPin **pin)
 {
-	CComPtr<IPin>      curPin;
-	CComPtr<IEnumPins> pinsEnum;
-	ULONG              num;
+	IPin      *curPin;
+	IEnumPins *pinsEnum;
+	ULONG     num;
 
 	if (!filter)
 		return false;
@@ -297,11 +297,11 @@ bool GetPinByName(IBaseFilter *filter, PIN_DIRECTION dir, const wchar_t *name,
 		wstring pinName;
 
 		if (PinIsDirection(curPin, dir) && PinNameIs(curPin, name)) {
-			*pin = curPin.Detach();
+			*pin = curPin;
 			return true;
 		}
 
-		curPin.Release();
+		curPin->Release();
 	}
 
 	return false;
@@ -309,9 +309,9 @@ bool GetPinByName(IBaseFilter *filter, PIN_DIRECTION dir, const wchar_t *name,
 
 bool GetPinByMedium(IBaseFilter *filter, REGPINMEDIUM &medium, IPin **pin)
 {
-	CComPtr<IPin>      curPin;
-	CComPtr<IEnumPins> pinsEnum;
-	ULONG              num;
+	IPin      *curPin;
+	IEnumPins *pinsEnum;
+	ULONG     num;
 
 	if (!filter)
 		return false;
@@ -323,11 +323,11 @@ bool GetPinByMedium(IBaseFilter *filter, REGPINMEDIUM &medium, IPin **pin)
 
 		if (GetPinMedium(curPin, curMedium) &&
 		    memcmp(&medium, &curMedium, sizeof(medium)) == 0) {
-			*pin = curPin.Detach();
+			*pin = curPin;
 			return true;
 		}
 
-		curPin.Release();
+		curPin->Release();
 	}
 
 	return false;
@@ -336,15 +336,15 @@ bool GetPinByMedium(IBaseFilter *filter, REGPINMEDIUM &medium, IPin **pin)
 static bool GetFilterByMediumFromMoniker(IMoniker *moniker,
 		REGPINMEDIUM &medium, IBaseFilter **filter)
 {
-	CComPtr<IBaseFilter> curFilter;
-	HRESULT              hr;
+	IBaseFilter *curFilter;
+	HRESULT     hr;
 
 	hr = moniker->BindToObject(nullptr, nullptr, IID_IBaseFilter,
 			(void**)&curFilter);
 	if (SUCCEEDED(hr)) {
-		CComPtr<IPin> pin;
+		IPin *pin;
 		if (GetPinByMedium(curFilter, medium, &pin)) {
-			*filter = curFilter.Detach();
+			*filter = curFilter;
 			return true;
 		}
 	} else {
@@ -358,11 +358,11 @@ static bool GetFilterByMediumFromMoniker(IMoniker *moniker,
 bool GetFilterByMedium(const CLSID &id, REGPINMEDIUM &medium,
 		IBaseFilter **filter)
 {
-	CComPtr<ICreateDevEnum> deviceEnum;
-	CComPtr<IEnumMoniker>   enumMoniker;
-	CComPtr<IMoniker>       moniker;
-	DWORD                   count = 0;
-	HRESULT                 hr;
+	ICreateDevEnum *deviceEnum;
+	IEnumMoniker   *enumMoniker;
+	IMoniker       *moniker;
+	DWORD          count = 0;
+	HRESULT        hr;
 
 	hr = CoCreateInstance(CLSID_SystemDeviceEnum, nullptr,
 			CLSCTX_INPROC_SERVER, IID_ICreateDevEnum,
@@ -386,7 +386,7 @@ bool GetFilterByMedium(const CLSID &id, REGPINMEDIUM &medium,
 		if (GetFilterByMediumFromMoniker(moniker, medium, filter))
 			return true;
 
-		moniker.Release();
+		moniker->Release();
 	}
 
 	return false;
@@ -394,7 +394,7 @@ bool GetFilterByMedium(const CLSID &id, REGPINMEDIUM &medium,
 
 bool GetPinMedium(IPin *pin, REGPINMEDIUM &medium)
 {
-	CComQIPtr<IKsPin>             ksPin(pin);
+	IKsPin *ksPin(reinterpret_cast<IKsPin*>(pin));
 	CoTaskMemPtr<KSMULTIPLE_ITEM> items;
 
 	if (!ksPin)
@@ -418,16 +418,16 @@ bool GetPinMedium(IPin *pin, REGPINMEDIUM &medium)
 
 static inline bool PinIsConnected(IPin *pin)
 {
-	CComPtr<IPin> connectedPin;
+	IPin *connectedPin;
 	return SUCCEEDED(pin->ConnectedTo(&connectedPin));
 }
 
 static bool DirectConnectOutputPin(IFilterGraph *graph, IPin *pin,
 		IBaseFilter *filterIn)
 {
-	CComPtr<IPin>      curPin;
-	CComPtr<IEnumPins> pinsEnum;
-	ULONG              num;
+	IPin      *curPin;
+	IEnumPins *pinsEnum;
+	ULONG     num;
 
 	if (!graph || !filterIn || !pin)
 		return false;
@@ -442,7 +442,7 @@ static bool DirectConnectOutputPin(IFilterGraph *graph, IPin *pin,
 				return true;
 		}
 
-		curPin.Release();
+		curPin->Release();
 	}
 
 	return false;
@@ -451,10 +451,10 @@ static bool DirectConnectOutputPin(IFilterGraph *graph, IPin *pin,
 bool DirectConnectFilters(IFilterGraph *graph, IBaseFilter *filterOut,
 		IBaseFilter *filterIn)
 {
-	CComPtr<IPin>      curPin;
-	CComPtr<IEnumPins> pinsEnum;
-	ULONG              num;
-	bool               connected = false;
+	IPin      *curPin;
+	IEnumPins *pinsEnum;
+	ULONG     num;
+	bool      connected = false;
 
 	if (!graph || !filterOut || !filterIn)
 		return false;
@@ -469,7 +469,7 @@ bool DirectConnectFilters(IFilterGraph *graph, IBaseFilter *filterOut,
 				connected = true;
 		}
 
-		curPin.Release();
+		curPin->Release();
 	}
 
 	return connected;
@@ -477,7 +477,7 @@ bool DirectConnectFilters(IFilterGraph *graph, IBaseFilter *filterOut,
 
 HRESULT MapPinToPacketID(IPin *pin, ULONG packetID)
 {
-	CComQIPtr<IMPEG2PIDMap> pidMap(pin);
+	IMPEG2PIDMap *pidMap(reinterpret_cast<IMPEG2PIDMap*>(pin));
 	if (!pidMap)
 		return E_NOINTERFACE;
 

@@ -399,7 +399,7 @@ STDMETHODIMP CaptureFilter::QueryInterface(REFIID riid, void **ppv)
 		AddRef();
 		*ppv = (IBaseFilter*)this;
 	} else if (riid == IID_IAMFilterMiscFlags) {
-		misc.CopyTo((IAMFilterMiscFlags**)ppv);
+		memcpy (&ppv, (void *)misc, sizeof(IAMFilterMiscFlags));
 	} else {
 		*ppv = nullptr;
 		return E_NOINTERFACE;

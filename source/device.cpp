@@ -209,7 +209,7 @@ void HDevice::ConvertAudioSettings()
 bool HDevice::SetupExceptionVideoCapture(IBaseFilter *filter,
 		VideoConfig &config)
 {
-	CComPtr<IPin> pin;
+	IPin *pin;
 
 	if (GetPinByName(filter, PINDIR_OUTPUT, L"656", &pin))
 		return SetupEncodedVideoCapture(filter, config, HD_PVR2);
@@ -222,7 +222,7 @@ bool HDevice::SetupExceptionVideoCapture(IBaseFilter *filter,
 
 static bool GetPinMediaType(IPin *pin, MediaType &mt)
 {
-	CComPtr<IEnumMediaTypes> mediaTypes;
+	IEnumMediaTypes *mediaTypes;
 
 	if (SUCCEEDED(pin->EnumMediaTypes(&mediaTypes))) {
 		MediaTypePtr curMT;
@@ -241,9 +241,9 @@ static bool GetPinMediaType(IPin *pin, MediaType &mt)
 
 bool HDevice::SetupVideoCapture(IBaseFilter *filter, VideoConfig &config)
 {
-	CComPtr<IPin> pin;
-	HRESULT       hr;
-	bool          success;
+	IPin    *pin;
+	HRESULT hr;
+	bool    success;
 
 	if (config.name.find(L"IT9910") != std::string::npos)
 		return SetupEncodedVideoCapture(filter, config, HD_PVR_Rocket);
@@ -262,7 +262,7 @@ bool HDevice::SetupVideoCapture(IBaseFilter *filter, VideoConfig &config)
 		}
 	}
 
-	CComQIPtr<IAMStreamConfig> pinConfig(pin);
+	IAMStreamConfig *pinConfig(reinterpret_cast<IAMStreamConfig*>(pin));
 	if (pinConfig == NULL) {
 		Error(L"Could not get IAMStreamConfig for device");
 		return false;
@@ -328,7 +328,7 @@ bool HDevice::SetupVideoCapture(IBaseFilter *filter, VideoConfig &config)
 
 bool HDevice::SetVideoConfig(VideoConfig *config)
 {
-	CComPtr<IBaseFilter> filter;
+	IBaseFilter *filter;
 
 	if (!EnsureInitialized(L"SetVideoConfig") ||
 	    !EnsureInactive(L"SetVideoConfig"))
@@ -337,8 +337,8 @@ bool HDevice::SetVideoConfig(VideoConfig *config)
 	videoMediaType = NULL;
 	graph->RemoveFilter(videoFilter);
 	graph->RemoveFilter(videoCapture);
-	videoFilter.Release();
-	videoCapture.Release();
+	videoFilter->Release();
+	videoCapture->Release();
 
 	if (!config)
 		return true;
@@ -372,10 +372,10 @@ bool HDevice::SetVideoConfig(VideoConfig *config)
 
 bool HDevice::SetupExceptionAudioCapture(IPin *pin)
 {
-	CComPtr<IEnumMediaTypes> enumMediaTypes;
-	ULONG                    count = 0;
-	HRESULT                  hr;
-	MediaTypePtr             mt;
+	IEnumMediaTypes *enumMediaTypes;
+	ULONG           count = 0;
+	HRESULT         hr;
+	MediaTypePtr    mt;
 
 	hr = pin->EnumMediaTypes(&enumMediaTypes);
 	if (FAILED(hr)) {
@@ -397,10 +397,10 @@ bool HDevice::SetupExceptionAudioCapture(IPin *pin)
 
 bool HDevice::SetupAudioCapture(IBaseFilter *filter, AudioConfig &config)
 {
-	CComPtr<IPin> pin;
-	MediaTypePtr  defaultMT;
-	bool          success;
-	HRESULT       hr;
+	IPin         *pin;
+	MediaTypePtr defaultMT;
+	bool         success;
+	HRESULT      hr;
 
 	success = GetFilterPin(filter, MEDIATYPE_Audio, PIN_CATEGORY_CAPTURE,
 			PINDIR_OUTPUT, &pin);
@@ -409,7 +409,7 @@ bool HDevice::SetupAudioCapture(IBaseFilter *filter, AudioConfig &config)
 		return false;
 	}
 
-	CComQIPtr<IAMStreamConfig> pinConfig(pin);
+	IAMStreamConfig *pinConfig(reinterpret_cast<IAMStreamConfig*>(pin));
 
 	if (config.useDefaultConfig) {
 		MediaTypePtr defaultMT;
@@ -458,7 +458,7 @@ bool HDevice::SetupAudioCapture(IBaseFilter *filter, AudioConfig &config)
 
 bool HDevice::SetAudioConfig(AudioConfig *config)
 {
-	CComPtr<IBaseFilter> filter;
+	IBaseFilter *filter;
 
 	if (!EnsureInitialized(L"SetAudioConfig") ||
 	    !EnsureInactive(L"SetAudioConfig"))
@@ -467,8 +467,8 @@ bool HDevice::SetAudioConfig(AudioConfig *config)
 	if (!audioConfig.useVideoDevice)
 		graph->RemoveFilter(audioFilter);
 	graph->RemoveFilter(audioCapture);
-	audioFilter.Release();
-	audioCapture.Release();
+	audioFilter->Release();
+	audioCapture->Release();
 	audioMediaType = NULL;
 
 	if (!config)
@@ -493,8 +493,8 @@ bool HDevice::SetAudioConfig(AudioConfig *config)
 				config->name.c_str(), config->path.c_str(),
 				&filter);
 		if (!success) {
-			Error(L"Audio device '%s': %s not found", config->name,
-					config->path);
+			Error(L"Audio device '%s': %s not found", config->name.c_str(),
+					config->path.c_str());
 			return false;
 		}
 	}
@@ -534,7 +534,7 @@ bool HDevice::ConnectPins(const GUID &category, const GUID &type,
 		IBaseFilter *filter, CaptureFilter *capture)
 {
 	HRESULT hr;
-	CComPtr<IPin> filterPin;
+	IPin *filterPin;
 
 	if (!EnsureInitialized(L"HDevice::ConnectPins") ||
 	    !EnsureInactive(L"HDevice::ConnectPins"))
@@ -614,8 +614,8 @@ bool HDevice::ConnectFilters()
 
 void HDevice::DisconnectFilters()
 {
-	CComPtr<IEnumFilters> filterEnum;
-	HRESULT               hr;
+	IEnumFilters *filterEnum;
+	HRESULT      hr;
 
 	if (!graph)
 		return;
@@ -624,11 +624,11 @@ void HDevice::DisconnectFilters()
 	if (FAILED(hr))
 		return;
 
-	CComPtr<IBaseFilter> filter;
+	IBaseFilter *filter;
 	while (filterEnum->Next(1, &filter, nullptr) == S_OK) {
 		graph->RemoveFilter(filter);
 		filterEnum->Reset();
-		filter.Release();
+		filter->Release();
 	}
 }
 

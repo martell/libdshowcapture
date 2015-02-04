@@ -41,10 +41,10 @@ class OutputPin : public IPin {
 	volatile long                  refCount;
 
 	PinOutputInfo                  outputInfo;
-	CComPtr<IPin>                  connectedPin;
+	IPin                           *connectedPin;
 	OutputFilter                   *filter;
 	volatile bool                  flushing = false;
-	CComPtr<IMemAllocator>         allocator;
+	IMemAllocator                  *allocator;
 	size_t                         bufSize;
 
 	bool IsValidMediaType(const AM_MEDIA_TYPE *pmt) const;
@@ -89,10 +89,10 @@ class OutputFilter : public IBaseFilter {
 
 	volatile long                  refCount;
 	FILTER_STATE                   state;
-	CComPtr<IFilterGraph>          graph;
-	CComPtr<OutputPin>             pin;
+	IFilterGraph                   *graph;
+	OutputPin                      *pin;
 
-	CComPtr<IAMFilterMiscFlags>    misc;
+	IAMFilterMiscFlags             *misc;
 
 public:
 	OutputFilter(const PinOutputInfo &info);
@@ -132,7 +132,7 @@ public:
 
 class OutputEnumPins : public IEnumPins {
 	volatile long                  refCount;
-	CComPtr<OutputFilter>          filter;
+	OutputFilter                   *filter;
 	UINT                           curPin;
 
 public:
@@ -152,7 +152,7 @@ public:
 
 class OutputEnumMediaTypes : public IEnumMediaTypes {
 	volatile long                  refCount;
-	CComPtr<OutputPin>             pin;
+	OutputPin                      *pin;
 	UINT                           curMT = 0;
 
 public:

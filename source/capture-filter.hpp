@@ -42,7 +42,7 @@ class CapturePin : public IPin, public IMemInputPin {
 	volatile long          refCount;
 
 	PinCaptureInfo         captureInfo;
-	CComPtr<IPin>          connectedPin;
+	IPin                   *connectedPin;
 	CaptureFilter          *filter;
 	MediaType              connectedMediaType;
 	volatile bool          flushing = false;
@@ -91,10 +91,10 @@ class CaptureFilter : public IBaseFilter {
 
 	volatile long         refCount;
 	FILTER_STATE          state;
-	CComPtr<IFilterGraph> graph;
-	CComPtr<CapturePin>   pin;
+	IFilterGraph          *graph;
+	CapturePin            *pin;
 
-	CComPtr<IAMFilterMiscFlags> misc;
+	IAMFilterMiscFlags    *misc;
 
 public:
 	CaptureFilter(const PinCaptureInfo &info);
@@ -127,7 +127,7 @@ public:
 
 class CaptureEnumPins : public IEnumPins {
 	volatile long          refCount;
-	CComPtr<CaptureFilter> filter;
+	CaptureFilter          *filter;
 	UINT                   curPin;
 
 public:
@@ -147,7 +147,7 @@ public:
 
 class CaptureEnumMediaTypes : public IEnumMediaTypes {
 	volatile long       refCount;
-	CComPtr<CapturePin> pin;
+	CapturePin          *pin;
 	UINT                curMT = 0;
 
 public:

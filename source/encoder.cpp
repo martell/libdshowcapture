@@ -30,9 +30,9 @@ HVideoEncoder::HVideoEncoder()
 
 HVideoEncoder::~HVideoEncoder()
 {
-	CComPtr<IEnumFilters> filterEnum;
-	IBaseFilter *filter;
-	HRESULT hr;
+	IEnumFilters *filterEnum;
+	IBaseFilter  *filter;
+	HRESULT      hr;
 
 	if (!initialized)
 		return;
@@ -54,10 +54,10 @@ HVideoEncoder::~HVideoEncoder()
 
 bool HVideoEncoder::ConnectFilters()
 {
-	CComPtr<IPin> deviceIn;
-	CComPtr<IPin> deviceOut;
-	CComPtr<IPin> encoderIn;
-	CComPtr<IPin> encoderOut;
+	IPin *deviceIn;
+	IPin *deviceOut;
+	IPin *encoderIn;
+	IPin *encoderOut;
 	bool success;
 	HRESULT hr;
 
@@ -110,9 +110,9 @@ bool HVideoEncoder::ConnectFilters()
 
 static bool GetPinFirstMediaType(IPin *pin, AM_MEDIA_TYPE **mt)
 {
-	CComPtr<IEnumMediaTypes>       mediaEnum;
-	HRESULT                        hr;
-	ULONG                          fetched;
+	IEnumMediaTypes* mediaEnum;
+	HRESULT          hr;
+	ULONG            fetched;
 
 	hr = pin->EnumMediaTypes(&mediaEnum);
 	if (FAILED(hr)) {
@@ -130,8 +130,8 @@ static bool GetPinFirstMediaType(IPin *pin, AM_MEDIA_TYPE **mt)
 
 bool HVideoEncoder::SetupCrossbar()
 {
-	CComPtr<IBaseFilter> crossbar;
-	CComPtr<IPin> pin;
+	IBaseFilter  *crossbar;
+	IPin         *pin;
 	REGPINMEDIUM medium;
 
 	/* C353 has no crossbar */
@@ -199,12 +199,12 @@ void HVideoEncoder::InitializeVideoFormat(MediaType &mt)
 
 bool HVideoEncoder::SetupEncoder(IBaseFilter *filter)
 {
-	CComPtr<IBaseFilter>           deviceFilter;
-	CComPtr<IPin>                  inputPin;
-	CComPtr<IPin>                  outputPin;
-	REGPINMEDIUM                   medium;
-	MediaTypePtr                   mtRaw;
-	MediaTypePtr                   mtEncoded;
+	IBaseFilter  *deviceFilter;
+	IPin         *inputPin;
+	IPin         *outputPin;
+	REGPINMEDIUM medium;
+	MediaTypePtr mtRaw;
+	MediaTypePtr mtEncoded;
 
 	if (!GetPinByName(filter, PINDIR_INPUT, nullptr, &inputPin)) {
 		Warning(L"Could not get encoder input pin");
@@ -219,7 +219,7 @@ bool HVideoEncoder::SetupEncoder(IBaseFilter *filter)
 		return false;
 	}
 
-	inputPin.Release();
+	inputPin->Release();
 
 	if (!GetFilterByMedium(CLSID_VideoInputDeviceCategory, medium,
 				&deviceFilter)) {
@@ -296,7 +296,7 @@ bool SetAvermediaEncoderConfig(IBaseFilter *encoder, VideoEncoderConfig &config)
 {
 	HRESULT hr;
 
-	CComQIPtr<IKsPropertySet> propertySet(encoder);
+	IKsPropertySet *propertySet(reinterpret_cast<IKsPropertySet*>(encoder));
 	if (!propertySet) {
 		Warning(L"Could not get IKsPropertySet for encoder");
 		return false;
@@ -350,8 +350,8 @@ bool SetAvermediaEncoderConfig(IBaseFilter *encoder, VideoEncoderConfig &config)
 
 bool HVideoEncoder::SetConfig(VideoEncoderConfig &config)
 {
-	CComPtr<IBaseFilter> filter;
-	CComPtr<IBaseFilter> crossbar;
+	IBaseFilter *filter;
+	IBaseFilter *crossbar;
 
 	if (config.name.empty() && config.path.empty()) {
 		Warning(L"No video encoder name or path specified");

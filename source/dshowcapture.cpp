@@ -125,7 +125,7 @@ static void OpenPropertyPages(HWND hwnd, IUnknown *propertyObject)
 	if (!propertyObject)
 		return;
 
-	CComQIPtr<ISpecifyPropertyPages> pages(propertyObject);
+	ISpecifyPropertyPages *pages(reinterpret_cast<ISpecifyPropertyPages*>(propertyObject));
 	CAUUID cauuid;
 
 	if (pages != NULL) {
@@ -141,8 +141,8 @@ static void OpenPropertyPages(HWND hwnd, IUnknown *propertyObject)
 
 void Device::OpenDialog(void *hwnd, DialogType type) const
 {
-	CComPtr<IUnknown> ptr;
-	HRESULT           hr;
+	IUnknown *ptr;
+	HRESULT  hr;
 
 	if (type == DialogType::ConfigVideo) {
 		ptr = context->videoFilter;
@@ -157,8 +157,8 @@ void Device::OpenDialog(void *hwnd, DialogType type) const
 		}
 
 		if (ptr != NULL && type == DialogType::ConfigCrossbar2) {
-			CComQIPtr<IAMCrossbar> xbar(ptr);
-			CComQIPtr<IBaseFilter> filter(xbar);
+			IAMCrossbar *xbar(reinterpret_cast<IAMCrossbar*>(ptr));
+			IBaseFilter *filter(reinterpret_cast<IBaseFilter*>(xbar));
 
 			hr = context->builder->FindInterface(
 					&LOOK_UPSTREAM_ONLY,
@@ -208,7 +208,7 @@ static void EnumExceptionVideoDevice(std::vector<VideoDevice> &devices,
 		const wchar_t *deviceName,
 		const wchar_t *devicePath)
 {
-	CComPtr<IPin> pin;
+	IPin *pin;
 
 	if (GetPinByName(filter, PINDIR_OUTPUT, L"656", &pin))
 		EnumEncodedVideo(devices, deviceName, devicePath, HD_PVR2);
@@ -222,9 +222,9 @@ static bool EnumVideoDevice(std::vector<VideoDevice> &devices,
 		const wchar_t *deviceName,
 		const wchar_t *devicePath)
 {
-	CComPtr<IPin> pin;
-	CComPtr<IPin> audioPin;
-	VideoDevice   info;
+	IPin        *pin;
+	IPin        *audioPin;
+	VideoDevice info;
 
 	if (wcsstr(deviceName, L"Hauppauge HD PVR Capture") != nullptr) {
 		EnumEncodedVideo(devices, deviceName, devicePath, HD_PVR1);
@@ -269,8 +269,8 @@ static bool EnumAudioDevice(vector<AudioDevice> &devices,
 		const wchar_t *deviceName,
 		const wchar_t *devicePath)
 {
-	CComPtr<IPin> pin;
-	AudioDevice   info;
+	IPin        *pin;
+	AudioDevice info;
 
 	bool success = GetFilterPin(filter, MEDIATYPE_Audio,
 			PIN_CATEGORY_CAPTURE, PINDIR_OUTPUT, &pin);
